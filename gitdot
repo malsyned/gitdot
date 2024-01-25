@@ -1,0 +1,122 @@
+#!/bin/bash
+
+set -e
+shopt -s extglob
+
+export GIT_DIR="${HOME}/.dotfiles.git"
+export GIT_WORK_TREE="${HOME}"
+
+prog="$(basename "$0")"
+
+USAGE_SUMMARY="Usage: ${prog} [-d GIT_DIR] [-w GIT_WORK_TREE] <command> [args...]"
+
+usage() {
+    echo "${USAGE_SUMMARY}" 1>&2
+    exit 1
+}
+
+gitdot-help-summary () {
+    cat <<EOF
+${USAGE_SUMMARY}
+
+Manage a bare git repository for tracking hidden ("dot") files in a
+working tree that exists at an unrelated path.
+
+    GIT_DIR         path to bare git repository (default: ${GIT_DIR})
+    GIT_WORK_TREE   path to working directory (default: ${GIT_WORK_TREE})
+
+command is one of:
+    init        create the git repository
+    destroy     delete the git repository
+    clone       clone an existing repository
+    dstatus     display status of all hidden files
+
+Any other command and arguments are passed unmodified to git with the
+working directory and git directory configured appropriately for
+managing dot files.
+EOF
+}
+
+configure-repo () {
+    cat > "${GIT_DIR}/info/exclude" <<EOF
+$(realpath --relative-to "${GIT_WORK_TREE}" "${GIT_DIR}")
+EOF
+    git config --local status.showUntrackedFiles no
+}
+
+gitdot-destroy () {
+    rm -rf "${GIT_DIR}"
+}
+
+gitdot-help-destroy () {
+    cat <<EOF
+${prog} destroy
+
+Delete the bare git repository GIT_DIR
+EOF
+}
+
+gitdot-init () {
+    unset GIT_WORK_TREE
+    git init --bare "$@"
+    configure-repo
+}
+
+gitdot-help-init () {
+    cat <<EOF
+${prog} init [additional args to git init...]
+
+Create a new bare git repository in GIT_DIR for tracking
+EOF
+}
+
+gitdot-clone () {
+    git clone --bare --no-checkout "$@"
+    configure-repo
+}
+
+gitdot-help-clone () {
+    cat <<EOF
+${prog} clone [additional args to git clone...]
+
+Clone a git repository into the bare repository GIT_DIR
+EOF
+}
+
+gitdot-dstatus() {
+    git status "$@" .!(.|)
+}
+
+gitdot-help-dstatus () {
+    cat <<EOF
+${prog} dstatus [additional args to git status...]
+
+git status of all files in the working tree starting with "."
+EOF
+}
+
+gitdot-help() {
+    if [[ $# -eq 0 ]]; then
+	gitdot-help-summary
+    elif type -t gitdot-help-"$1" > /dev/null; then
+	gitdot-help-"$1"
+    else
+	git help "$@"
+    fi
+}
+
+while getopts "d:w:" opt; do
+    case "${opt}" in
+	d) GIT_DIR="$(realpath "${OPTARG}")";;
+	w) GIT_WORK_TREE="${OPTARG}";;
+	*) usage;;
+    esac
+done
+shift $((OPTIND-1))
+CMD="$1"; shift || usage
+
+if type -t gitdot-"${CMD}" > /dev/null; then
+    gitdot-"${CMD}" "$@"
+else
+    git "${CMD}" "$@"
+fi
