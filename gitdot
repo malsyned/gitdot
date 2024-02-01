@@ -57,8 +57,10 @@ EOF
 }
 
 gitdot-init () {
-    unset GIT_WORK_TREE
-    git init --bare "$@"
+    (
+	unset GIT_WORK_TREE
+	git init --bare "$@"
+    )
     configure-repo
 }
 
