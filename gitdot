@@ -30,6 +30,7 @@ command is one of:
     destroy     delete the git repository
     clone       clone an existing repository
     dstatus     display status of all hidden files
+    bindump     create text versions of binary files as configured in ~/.config/gitdot/bindump.conf
 
 Any other command and arguments are passed unmodified to git with the
 working directory and git directory configured appropriately for
@@ -97,6 +98,67 @@ git status of all files in the working tree starting with "."
 EOF
 }
 
+declare -A bindumpers
+declare -a bindumper_order
+
+gitdot-bindump () {
+    if [[ $# -eq 0 ]]; then
+        dump-tracked
+    else
+        dump-file "$1"
+    fi
+}
+
+gitdot-help-bindump () {
+    cat <<EOF
+${prog} bindump [file]
+
+dump binary files to text equivalents in .config/gitdot/bindumps
+as configured by bindump directives in .config/gitdot/gitdot.conf
+EOF
+}
+
+dump-tracked () {
+    git ls-files --full-name -z "$GIT_WORK_TREE" \
+    | while IFS= read -r -d $'\0' file; do
+        if [[ $file != .config/gitdot/* ]]; then
+            dump-file "$file"
+        fi
+    done
+}
+
+dump-file () {
+    local file="$1"
+    local dumper_fn="$(find-bindumper "$file")"
+    if [[ -n $dumper_fn ]]; then
+        local target="$GIT_WORK_TREE/.config/gitdot/bindumps/$file"
+        local target_dir="$(dirname "$target")"
+        mkdir -p "$target_dir"
+        "$dumper_fn" "$GIT_WORK_TREE/$file" "$target" \
+        || echo "WARNING: failed to dump binary file: $file" >&2
+    fi
+}
+
+find-bindumper () {
+    local file="$1"
+    local dumper_fn=
+    # find the most recently defined matching pattern
+    for pattern in "${bindumper_order[@]}"; do
+        if [[ $file == $pattern ]]; then
+            dumper_fn="${bindumpers["$pattern"]}"
+        fi
+    done
+    echo "$dumper_fn"
+}
+
+# bindump: call from `.config/gitdot/bindump.conf` to register a pattern with a bindump function
+bindump () {
+    local dump_fn="$1"
+    local pattern="$2"
+    bindumpers["$pattern"]=bindump-"$dump_fn"
+    bindumper_order+=( "$pattern" )
+}
+
 gitdot-help() {
     if [[ $# -eq 0 ]]; then
         gitdot-help-summary
@@ -106,6 +168,49 @@ gitdot-help() {
         git help "$@"
     fi
 }
+
+#### Built-in bindump functions ####
+
+bindump-sqlite () {
+    # do our best to dump the sqlite db even if it is open and locked
+    local TMPDIR=$(mktemp -d) || return
+    cp "$1"* "$TMPDIR"
+    sqlite3 "$TMPDIR/$(basename "$1")" .dump > "$2"
+    rm -rf "$TMPDIR"
+}
+
+bindump-signalsql () {
+    # Like dump-sqlite, but for an encrypted database
+    local TMPDIR=$(mktemp -d) || return
+    cp "$1"* "$TMPDIR"
+    key=$(jq -r .key "$GIT_WORK_TREE/.config/Signal/config.json")
+    sqlcipher "$TMPDIR/$(basename "$1")" "PRAGMA key = \"x'$key'\"" .dump > "$2"
+    rm -rf "$TMPDIR"
+}
+
+bindump-dconf () {
+    XDG_CONFIG_HOME="$(realpath "${1%/dconf/*}")" dconf dump / > "$2"
+}
+
+bindump-leveldb () {
+    # go install github.com/cions/leveldb-cli/cmd/leveldb@latest
+    $HOME/go/bin/leveldb -d "$(dirname "$1")" show > "$2"
+}
+
+bindump-indexeddb () {
+    $HOME/go/bin/leveldb -i -d "$(dirname "$1")" show > "$2"
+}
+
+bindump-lz4json () {
+    lz4jsoncat "$1" > "$2"
+}
+
+bindump-tdb () {
+    # `-e` to try to dump even corrupt databases, but `-e` always returns `1`!
+    tdbdump -e "$1" > "$2" || true
+}
+
+#### MAIN ####
 
 while getopts "d:w:h" opt; do
     case "${opt}" in
@@ -117,6 +222,9 @@ while getopts "d:w:h" opt; do
 done
 shift $((OPTIND-1))
 CMD="$1"; shift || usage
+
+: ${GITDOT_CONFIG:="$GIT_WORK_TREE/.config/gitdot/gitdot.conf"}
+[[ -f $GITDOT_CONFIG ]] && . "$GITDOT_CONFIG"
 
 if type -t gitdot-"${CMD}" > /dev/null; then
     gitdot-"${CMD}" "$@"

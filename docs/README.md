@@ -1,5 +1,5 @@
 ```
-Usage: gitdot [-d GIT_DIR] [-w GIT_WORK_TREE] <command> [args...]
+Usage: gitdot [-h] [-d GIT_DIR] [-w GIT_WORK_TREE] <command> [args...]
 
 Manage a bare git repository for tracking hidden ("dot") files in a
 working tree that exists at an unrelated path.
@@ -12,6 +12,7 @@ command is one of:
     destroy     delete the git repository
     clone       clone an existing repository
     dstatus     display status of all hidden files
+    bindump     create text versions of binary files as configured in ~/.config/gitdot/bindump.conf
 
 Any other command and arguments are passed unmodified to git with the
 working directory and git directory configured appropriately for
@@ -32,4 +33,9 @@ gitdot clone [additional args to git clone...]
 gitdot dstatus [additional args to git status...]
     
     git status of all files in the working tree starting with "."
+
+gitdot bindump [file]
+    
+    dump binary files to text equivalents in .config/gitdot/bindumps
+    as configured by bindump directives in .config/gitdot/gitdot.conf
 ```
