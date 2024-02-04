@@ -58,8 +58,8 @@ EOF
 
 gitdot-init () {
     (
-	unset GIT_WORK_TREE
-	git init --bare "$@"
+        unset GIT_WORK_TREE
+        git init --bare "$@"
     )
     configure-repo
 }
@@ -99,19 +99,19 @@ EOF
 
 gitdot-help() {
     if [[ $# -eq 0 ]]; then
-	gitdot-help-summary
+        gitdot-help-summary
     elif type -t gitdot-help-"$1" > /dev/null; then
-	gitdot-help-"$1"
+        gitdot-help-"$1"
     else
-	git help "$@"
+        git help "$@"
     fi
 }
 
 while getopts "d:w:" opt; do
     case "${opt}" in
-	d) GIT_DIR="$(realpath "${OPTARG}")";;
-	w) GIT_WORK_TREE="${OPTARG}";;
-	*) usage;;
+        d) GIT_DIR="$(realpath "${OPTARG}")";;
+        w) GIT_WORK_TREE="${OPTARG}";;
+        *) usage;;
     esac
 done
 shift $((OPTIND-1))
