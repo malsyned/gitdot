@@ -8,7 +8,7 @@ export GIT_WORK_TREE="${HOME}"
 
 prog="$(basename "$0")"
 
-USAGE_SUMMARY="Usage: ${prog} [-d GIT_DIR] [-w GIT_WORK_TREE] <command> [args...]"
+USAGE_SUMMARY="Usage: ${prog} [-h] [-d GIT_DIR] [-w GIT_WORK_TREE] <command> [args...]"
 
 usage() {
     echo "${USAGE_SUMMARY}" 1>&2
@@ -107,8 +107,9 @@ gitdot-help() {
     fi
 }
 
-while getopts "d:w:" opt; do
+while getopts "d:w:h" opt; do
     case "${opt}" in
+        h) gitdot-help; exit;;
         d) GIT_DIR="$(realpath "${OPTARG}")";;
         w) GIT_WORK_TREE="${OPTARG}";;
         *) usage;;
