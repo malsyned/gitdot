@@ -121,9 +121,8 @@ EOF
 dump-tracked () {
     git ls-files --full-name -z "$GIT_WORK_TREE" \
     | while IFS= read -r -d $'\0' file; do
-        if [[ $file != .config/gitdot/* ]]; then
-            dump-file "$file"
-        fi
+        [[ $file == .config/gitdot/* ]] && continue
+        dump-file "$file"
     done
 }
 
@@ -137,6 +136,49 @@ dump-file () {
         "$dumper_fn" "$GIT_WORK_TREE/$file" "$target" \
         || echo "WARNING: failed to dump binary file: $file" >&2
     fi
+}
+
+dump-modified-files () {
+    for-each-status dump-modified-file
+}
+
+dump-modified-file () {
+    local status="$1"
+    local file="$2"
+    [[ $file == .config/gitdot/* ]] && return
+
+    local target="$GIT_WORK_TREE/.config/gitdot/bindumps/$file"
+    if [[ ( $status == *M* || $status == *A* )
+          && ( ! -e $target || $file -nt $target ) ]]
+    then
+        dump-file "$file"
+    fi
+}
+
+added-add-dumps () {
+    for-each-status added-add-dump
+}
+
+added-add-dump () {
+    local status="$1"
+    local file="$2"
+    [[ $file == .config/gitdot/* ]] && return
+
+    local target="$GIT_WORK_TREE/.config/gitdot/bindumps/$file"
+    if [[ ( $status == M? || $status == A? ) && -e $target ]]; then
+        git add "$target"
+    fi
+}
+
+for-each-status () {
+    fn="$1"
+    git status --porcelain --no-renames --untracked-files=no -z \
+    | while IFS= read -r -N 2 status; do
+        IFS= read -r -N 1  # skip blank space between code and file
+        IFS= read -r -d $'\0' file
+        local target="$GIT_WORK_TREE/.config/gitdot/bindumps/$file"
+        "$fn" "$status" "$file"
+    done
 }
 
 find-bindumper () {
@@ -226,8 +268,13 @@ CMD="$1"; shift || usage
 : ${GITDOT_CONFIG:="$GIT_WORK_TREE/.config/gitdot/gitdot.conf"}
 [[ -f $GITDOT_CONFIG ]] && . "$GITDOT_CONFIG"
 
+dump-modified-files
+
 if type -t gitdot-"${CMD}" > /dev/null; then
     gitdot-"${CMD}" "$@"
 else
     git "${CMD}" "$@"
 fi
+
+dump-modified-files
+added-add-dumps
