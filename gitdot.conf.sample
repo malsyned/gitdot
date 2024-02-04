@@ -1,0 +1,17 @@
+# bindump pattern registrations
+bindump dconf     ".config/dconf/user"
+bindump sqlite    "*.db"
+bindump sqlite    "*.sqlite"
+bindump tdb       "*.tdb"
+bindump lz4json   "*.json.lz4"
+bindump lz4json   "*.jsonlz4"
+bindump lz4json   "*.baklz4"
+bindump signalsql ".config/Signal/sql/db.sqlite"
+bindump sqlite    ".config/Signal/Trust Tokens"
+bindump sqlite    ".config/Signal/WebStorage/QuotaManager"
+# Use the "CURRENT" file as a proxy for the directory, since Git doesn't track directories
+bindump indexeddb ".config/Signal/IndexedDB/file__0.indexeddb.leveldb/CURRENT"
+bindump leveldb   ".config/Signal/Local Storage/leveldb/CURRENT"
+bindump leveldb   ".config/Signal/Session Storage/CURRENT"
+bindump leveldb   ".config/vivaldi/Default/Local App Settings/*/CURRENT"
+
