@@ -42,7 +42,7 @@ configure-repo () {
     cat > "${GIT_DIR}/info/exclude" <<EOF
 $(realpath --relative-to "${GIT_WORK_TREE}" "${GIT_DIR}")
 EOF
-    git config --local status.showUntrackedFiles no
+    git config --local core.excludesFile .config/gitdot/exclude
 }
 
 gitdot-destroy () {
