@@ -88,6 +88,18 @@ Clone a git repository into the bare repository GIT_DIR
 EOF
 }
 
+gitdot-shell () {
+    "$SHELL" "$@"
+}
+
+gitdot-help-shell () {
+    cat <<EOF
+${prog} shell [args to subshell...]
+
+Spawn a subshell with GIT_DIR and GIT_WORK_TREE set
+EOF
+}
+
 gitdot-dstatus() {
     git status "$@" .!(.|)
 }
