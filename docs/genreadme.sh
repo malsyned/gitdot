@@ -1,3 +1,4 @@
+export HOME='$HOME'
 (
     echo '```'
     ./gitdot help

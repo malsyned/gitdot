@@ -32,7 +32,8 @@ command is one of:
     destroy     delete the git repository
     clone       clone an existing repository
     dstatus     display status of all hidden files
-    bindump     create text versions of binary files as configured in ~/.config/gitdot/bindump.conf
+    bindump     create text versions of binary files as configured in
+                ${HOME}/.config/gitdot/bindump.conf
 
 Any other command and arguments are passed unmodified to git with the
 working directory and git directory configured appropriately for
