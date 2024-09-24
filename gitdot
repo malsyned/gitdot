@@ -42,6 +42,7 @@ EOF
 }
 
 configure-repo () {
+    mkdir -p "${GIT_DIR}/info"
     cat > "${GIT_DIR}/info/exclude" <<EOF
 $(realpath --relative-to "${GIT_WORK_TREE}" "${GIT_DIR}")
 EOF
