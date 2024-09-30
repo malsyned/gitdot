@@ -34,6 +34,7 @@ command is one of:
     dstatus     display status of all hidden files
     bindump     create text versions of binary files as configured in
                 ${HOME}/.config/gitdot/bindump.conf
+    run         run a command with GIT_DIR and GIT_WORK_TREE set
 
 Any other command and arguments are passed unmodified to git with the
 working directory and git directory configured appropriately for
@@ -203,6 +204,20 @@ bindump () {
     local pattern="$2"
     bindumpers["$pattern"]=bindump-"$dump_fn"
     bindumper_order+=( "$pattern" )
+}
+
+gitdot-run () {
+    "$@"
+}
+
+gitdot-help-run () {
+    cat <<EOF
+${prog} run command [argument ...]
+
+Run command in the context of the gitdot repository, by setting the
+GIT_DIR and GIT_WORK_DIR environment variables. Running "git init",
+"git clone", or "gitdot" within this environment is not advisable.
+EOF
 }
 
 gitdot-help() {
