@@ -79,7 +79,7 @@ EOF
 }
 
 gitdot-clone () {
-    git clone --bare --no-checkout "$@"
+    git clone --bare --no-checkout "$@" "$GIT_DIR"
     configure-repo
 }
 
